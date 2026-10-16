@@ -1,359 +1,512 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rasta Rush - Car Racing Game</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-        body {
-            background: #222;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-        #game-container {
-            position: relative;
-            width: 400px;
-            height: 650px;
-            background: #4e8c33; /* Grass background */
-            overflow: hidden;
-            border: 4px solid #fff;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-        }
-        /* Road Layout */
-        .road {
-            position: absolute;
-            left: 80px;
-            width: 240px;
-            height: 100%;
-            background: #333;
-            border-left: 6px dashed #fff;
-            border-right: 6px dashed #fff;
-        }
-        .road-line {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px;
-            height: 100%;
-            background-image: linear-gradient(to bottom, #fff 50%, transparent 50%);
-            background-size: 10px 40px;
-            animation: moveRoad 0.5s linear infinite;
-        }
-        @keyframes moveRoad {
-            0% { background-position: 0 0; }
-            100% { background-position: 0 40px; }
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Arrow Escape Puzzle</title>
 
-        /* Side tracks: Train and Bus lanes */
-        .train-track {
-            position: absolute;
-            left: 10px;
-            width: 65px;
-            height: 100%;
-            background: #555;
-            border-right: 3px solid #777;
-        }
-        .side-bus-road {
-            position: absolute;
-            right: 10px;
-            width: 60px;
-            height: 100%;
-            background: #a89368; /* Dirt road */
-        }
+<style>
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
-        /* Entities */
-        .car {
-            position: absolute;
-            width: 40px;
-            height: 70px;
-            border-radius: 6px;
-        }
-        #player {
-            background: #e74c3c;
-            bottom: 20px;
-            left: 180px;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
-            z-index: 10;
-        }
-        .enemy {
-            background: #3498db;
-            top: -80px;
-            z-index: 5;
-        }
-        .train {
-            position: absolute;
-            left: 12px;
-            width: 55px;
-            height: 140px;
-            background: #8e44ad;
-            border-radius: 4px;
-            top: -150px;
-            z-index: 6;
-        }
-        .bus {
-            position: absolute;
-            right: 15px;
-            width: 50px;
-            height: 100px;
-            background: #27ae60;
-            border-radius: 4px;
-            top: -120px;
-            z-index: 6;
-        }
+body {
+  margin: 0;
+  background: #10182b;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
 
-        /* UI Elements */
-        #ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            display: flex;
-            justify-content: space-between;
-            color: #fff;
-            font-weight: bold;
-            font-size: 14px;
-            z-index: 20;
-            text-shadow: 1px 1px 2px #000;
-        }
+header {
+  padding: 15px 8px;
+  background: linear-gradient(135deg,#172554,#312e81);
+  box-shadow: 0 4px 15px #0008;
+}
 
-        #game-over-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            z-index: 30;
-            display: none;
-        }
-        #game-over-screen h1 {
-            color: #e74c3c;
-            font-size: 28px;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px #000;
-        }
-        .btn {
-            background: #2ecc71;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin-top: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 5px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        .btn:hover {
-            background: #27ae60;
-        }
+h1 {
+  margin: 0 0 8px;
+  font-size: 25px;
+  color: #67e8f9;
+}
 
-        /* Controls UI for Mobile/Click */
-        #controls {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            z-index: 25;
-        }
-        .ctrl-btn {
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid white;
-            color: white;
-            padding: 12px 25px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            user-select: none;
-        }
-        .ctrl-btn:active {
-            background: rgba(255, 255, 255, 0.6);
-        }
-    </style>
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+#game {
+  width: min(94vw, 480px);
+  margin: 22px auto 12px;
+  padding: 12px;
+  background: linear-gradient(145deg,#26344e,#131d32);
+  border: 2px solid #536581;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px #0008;
+}
+
+#board {
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  background: #0b1220;
+  border-radius: 12px;
+  perspective: 700px;
+}
+
+.cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: linear-gradient(145deg,#273951,#17253b);
+  border-radius: 5px;
+  box-shadow: inset 0 2px 3px #52657a55,
+              0 2px 0 #080e1b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow {
+  width: 90%;
+  height: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(19px, 6vw, 35px);
+  font-weight: 900;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 5px;
+  color: var(--c);
+  text-shadow: 0 3px 0 #0008, 0 0 8px var(--c);
+  filter: drop-shadow(0 3px 1px #0009);
+  transition: transform .18s, opacity .18s;
+}
+
+.arrow:active {
+  transform: scale(.82);
+}
+
+.arrow.removing {
+  opacity: 0;
+  transform: translate(var(--tx),var(--ty)) scale(.2);
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  background: linear-gradient(135deg,#2563eb,#7c3aed);
+  box-shadow: 0 4px 0 #172554;
+  cursor: pointer;
+}
+
+button:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+#message {
+  min-height: 30px;
+  padding: 8px;
+  color: #fde68a;
+  font-weight: bold;
+}
+
+#help {
+  color: #cbd5e1;
+  font-size: 13px;
+  padding: 0 15px 20px;
+  line-height: 1.6;
+}
+
+#win {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: #050b18ed;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.winbox {
+  width: 100%;
+  max-width: 350px;
+  background: linear-gradient(145deg,#1e3a5f,#312e81);
+  padding: 28px;
+  border-radius: 22px;
+  border: 2px solid #67e8f9;
+  box-shadow: 0 0 35px #22d3ee55;
+}
+
+.winbox h2 {
+  color: #67e8f9;
+  font-size: 30px;
+}
+
+footer {
+  padding: 15px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+</style>
 </head>
+
 <body>
 
-    <div id="game-container">
-        <!-- UI Header -->
-        <div id="ui">
-            <span id="score-txt">SCORE: 0</span>
-            <span id="lives-txt">LIVES: 3</span>
-            <span id="level-txt">LEVEL: 1</span>
-        </div>
+<header>
+  <h1>🏹 ARROW ESCAPE 3D</h1>
+  <div class="stats">
+    <span>LEVEL: <b id="level">1</b></span>
+    <span>SCORE: <b id="score">0</b></span>
+    <span>MOVES: <b id="moves">0</b></span>
+  </div>
+</header>
 
-        <!-- Side Tracks and Road -->
-        <div class="train-track"></div>
-        <div class="road">
-            <div class="road-line"></div>
-        </div>
-        <div class="side-bus-road"></div>
+<div id="game">
+  <div id="board"></div>
 
-        <!-- Game Elements -->
-        <div id="player" class="car"></div>
-        <div id="enemy" class="enemy car"></div>
-        <div id="train" class="train"></div>
-        <div id="bus" class="bus"></div>
+  <div id="message">Tap an arrow to help it escape!</div>
 
-        <!-- Game Over Screen -->
-        <div id="game-over-screen">
-            <h1>GAME OVER</h1>
-            <p>Aapke Points: <span id="final-score">0</span></p>
-            <button class="btn" onclick="restartGame()">RETRY</button>
-        </div>
+  <div class="controls">
+    <button onclick="restartLevel()">↻ Restart</button>
+    <button onclick="showHint()">💡 Hint</button>
+    <button onclick="nextLevel()">Next Level ➜</button>
+  </div>
+</div>
 
-        <!-- Control Buttons -->
-        <div id="controls">
-            <div class="ctrl-btn" ontouchstart="movePlayer(-40)" onclick="movePlayer(-40)">◀</div>
-            <div class="ctrl-btn" ontouchstart="movePlayer(40)" onclick="movePlayer(40)">▶</div>
-        </div>
-    </div>
+<div id="help">
+  HOW TO PLAY<br>
+  Tap an arrow to move it in its pointing direction.<br>
+  If another arrow blocks its path, it cannot escape.<br>
+  Clear the board to win the level!
+</div>
 
-    <script>
-        const player = document.getElementById('player');
-        const enemy = document.getElementById('enemy');
-        const train = document.getElementById('train');
-        const bus = document.getElementById('bus');
-        const scoreTxt = document.getElementById('score-txt');
-        const livesTxt = document.getElementById('lives-txt');
-        const levelTxt = document.getElementById('level-txt');
-        const gameOverScreen = document.getElementById('game-over-screen');
-        const finalScore = document.getElementById('final-score');
+<footer>ARROW ESCAPE PUZZLE • THINK • PLAN • ESCAPE</footer>
 
-        let score = 0;
-        let lives = 3;
-        let level = 1;
-        let isGameOver = false;
+<div id="win">
+  <div class="winbox">
+    <div style="font-size:55px">🏆</div>
+    <h2>LEVEL COMPLETE!</h2>
+    <p id="winText">Great job!</p>
+    <button onclick="nextLevel()">PLAY NEXT LEVEL ➜</button>
+  </div>
+</div>
 
-        // Player Position within road (Road starts at left: 80px, width: 240px)
-        let playerX = 180; 
+<script>
+const board = document.getElementById("board");
 
-        // Speeds
-        let enemyY = -100;
-        let enemyX = 130; // Random lane on road
-        let enemySpeed = 5;
+let level = 1;
+let score = 0;
+let moves = 0;
+let arrows = [];
+let history = [];
+let locked = false;
+let hintIndex = -1;
 
-        let trainY = -200;
-        let trainSpeed = 4;
+const colors = [
+  "#22d3ee", "#fb7185", "#fbbf24",
+  "#a78bfa", "#4ade80", "#f97316",
+  "#f472b6", "#60a5fa"
+];
 
-        let busY = -150;
-        let busSpeed = 3;
+function randomColor(i) {
+  return colors[i % colors.length];
+}
 
-        // Keyboard Controls
-        document.addEventListener('keydown', (e) => {
-            if (isGameOver) return;
-            if (e.key === 'ArrowLeft') movePlayer(-20);
-            if (e.key === 'ArrowRight') movePlayer(20);
-        });
+/*
+  Each arrow has a starting cell and direction.
+  Directions:
+  R = right, L = left, U = up, D = down.
+*/
 
-        function movePlayer(val) {
-            if (isGameOver) return;
-            playerX += val;
-            // Road boundary limits (85 to 280)
-            if (playerX < 90) playerX = 90;
-            if (playerX > 270) playerX = 270;
-            player.style.left = playerX + 'px';
+function generatePuzzle(n) {
+  const list = [];
+  const occupied = new Set();
+
+  function add(x, y, d) {
+    const key = x + "," + y;
+    if (x < 0 || y < 0 || x >= n || y >= n) return false;
+    if (occupied.has(key)) return false;
+
+    occupied.add(key);
+    list.push({
+      x, y, d,
+      id: list.length,
+      color: randomColor(list.length),
+      removed: false
+    });
+    return true;
+  }
+
+  /*
+    Make arrows whose paths lead toward the board edge.
+    Some arrows start blocked by other arrows.
+  */
+
+  const directions = ["R", "D", "L", "U"];
+  const count = Math.min(n * n - 3, 8 + level * 3);
+
+  let attempts = 0;
+
+  while (list.length < count && attempts < 2000) {
+    attempts++;
+
+    const x = Math.floor(Math.random() * n);
+    const y = Math.floor(Math.random() * n);
+    const d = directions[Math.floor(Math.random() * 4)];
+
+    add(x, y, d);
+  }
+
+  /*
+    Arrange arrows in a deterministic, solvable order:
+    arrows pointing outward are always permitted to escape.
+    Remaining arrows may be blocked temporarily.
+  */
+
+  return list;
+}
+
+function directionSymbol(d) {
+  return {
+    R: "➜",
+    L: "⬅",
+    U: "⬆",
+    D: "⬇"
+  }[d];
+}
+
+function getGridSize() {
+  return Math.min(7, 4 + Math.floor((level - 1) / 2));
+}
+
+function getRay(a) {
+  const cells = [];
+  let x = a.x;
+  let y = a.y;
+
+  const delta = {
+    R: [1, 0],
+    L: [-1, 0],
+    U: [0, -1],
+    D: [0, 1]
+  }[a.d];
+
+  while (true) {
+    x += delta[0];
+    y += delta[1];
+
+    if (x < 0 || y < 0 || x >= getGridSize() || y >= getGridSize()) {
+      break;
+    }
+
+    cells.push([x, y]);
+  }
+
+  return cells;
+}
+
+function canEscape(a) {
+  const ray = getRay(a);
+
+  for (const [x, y] of ray) {
+    const blocker = arrows.find(
+      b => !b.removed && b.id !== a.id &&
+           b.x === x && b.y === y
+    );
+
+    if (blocker) return false;
+  }
+
+  return true;
+}
+
+function render() {
+  const n = getGridSize();
+
+  board.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+  board.innerHTML = "";
+
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+
+      const a = arrows.find(
+        z => !z.removed && z.x === x && z.y === y
+      );
+
+      if (a) {
+        const el = document.createElement("div");
+        el.className = "arrow";
+        el.textContent = directionSymbol(a.d);
+        el.style.setProperty("--c", a.color);
+
+        el.setAttribute("role", "button");
+        el.setAttribute("aria-label", "Arrow " + a.d);
+
+        if (a.id === hintIndex) {
+          el.style.background = "#ffffff22";
+          el.style.outline = "2px solid white";
         }
 
-        function updateGame() {
-            if (isGameOver) return;
+        el.onclick = () => tapArrow(a.id);
 
-            // Move Enemy Car
-            enemyY += enemySpeed;
-            if (enemyY > 650) {
-                enemyY = -100;
-                // Randomly change enemy lane inside road limits
-                enemyX = Math.random() > 0.5 ? 130 : 220;
-                score += 10;
-                scoreTxt.innerText = "SCORE: " + score;
+        cell.appendChild(el);
+      }
 
-                // Increase Level based on score
-                if (score % 50 === 0) {
-                    level++;
-                    enemySpeed += 1;
-                    levelTxt.innerText = "LEVEL: " + level;
-                }
-            }
-            enemy.style.top = enemyY + 'px';
-            enemy.style.left = enemyX + 'px';
+      board.appendChild(cell);
+    }
+  }
 
-            // Move Train (Parallel Track)
-            trainY += trainSpeed;
-            if (trainY > 650) {
-                trainY = -250;
-            }
-            train.style.top = trainY + 'px';
+  document.getElementById("level").textContent = level;
+  document.getElementById("score").textContent = score;
+  document.getElementById("moves").textContent = moves;
+}
 
-            // Move Bus (Outside Road)
-            busY += busSpeed;
-            if (busY > 650) {
-                busY = -200;
-            }
-            bus.style.top = busY + 'px';
+function tapArrow(id) {
+  if (locked) return;
 
-            // Collision Detection with Enemy Car
-            let playerRect = player.getBoundingClientRect();
-            let enemyRect = enemy.getBoundingClientRect();
+  const a = arrows.find(z => z.id === id);
 
-            if (
-                playerRect.left < enemyRect.right &&
-                playerRect.right > enemyRect.left &&
-                playerRect.top < enemyRect.bottom &&
-                playerRect.bottom > enemyRect.top
-            ) {
-                lives--;
-                livesTxt.innerText = "LIVES: " + lives;
-                enemyY = -100; // Reset enemy position after crash
-                
-                if (lives <= 0) {
-                    endGame();
-                }
-            }
+  if (!a || a.removed) return;
 
-            requestAnimationFrame(updateGame);
-        }
+  if (!canEscape(a)) {
+    document.getElementById("message").textContent =
+      "🚧 Path blocked! Remove the blocking arrow first.";
+    return;
+  }
 
-        function endGame() {
-            isGameOver = true;
-            finalScore.innerText = score;
-            gameOverScreen.style.display = 'flex';
-        }
+  history.push({
+    id: a.id,
+    x: a.x,
+    y: a.y,
+    removed: a.removed,
+    score,
+    moves
+  });
 
-        function restartGame() {
-            score = 0;
-            lives = 3;
-            level = 1;
-            enemySpeed = 5;
-            isGameOver = false;
-            enemyY = -100;
-            trainY = -200;
-            busY = -150;
-            playerX = 180;
-            player.style.left = playerX + 'px';
-            scoreTxt.innerText = "SCORE: 0";
-            livesTxt.innerText = "LIVES: 3";
-            levelTxt.innerText = "LEVEL: 1";
-            gameOverScreen.style.display = 'none';
-            updateGame();
-        }
+  locked = true;
+  moves++;
+  score += 10;
 
-        // Start Game Loop
-        updateGame();
-    </script>
+  const element = [...document.querySelectorAll(".arrow")]
+    .find(el => el.getAttribute("aria-label") === "Arrow " + a.d &&
+      el.parentElement.parentElement.querySelector(".arrow") === el);
+
+  const delta = {
+    R: [150, 0],
+    L: [-150, 0],
+    U: [0, -150],
+    D: [0, 150]
+  }[a.d];
+
+  const el = findArrowElement(a);
+
+  if (el) {
+    el.style.setProperty("--tx", delta[0] + "px");
+    el.style.setProperty("--ty", delta[1] + "px");
+    el.classList.add("removing");
+  }
+
+  document.getElementById("message").textContent = "✨ Arrow escaped!";
+
+  setTimeout(() => {
+    a.removed = true;
+    locked = false;
+    hintIndex = -1;
+    render();
+
+    if (arrows.every(z => z.removed)) {
+      finishLevel();
+    }
+  }, 190);
+}
+
+function findArrowElement(a) {
+  const cells = [...board.children];
+  const n = getGridSize();
+  const index = a.y * n + a.x;
+  return cells[index]?.querySelector(".arrow") || null;
+}
+
+function finishLevel() {
+  score += level * 100;
+
+  document.getElementById("score").textContent = score;
+  document.getElementById("winText").textContent =
+    "You escaped all arrows! Bonus: " + (level * 100) + " points.";
+
+  document.getElementById("win").style.display = "flex";
+}
+
+function createLevel() {
+  const n = getGridSize();
+  arrows = generatePuzzle(n);
+  history = [];
+  moves = 0;
+  locked = false;
+  hintIndex = -1;
+
+  document.getElementById("win").style.display = "none";
+  document.getElementById("message").textContent =
+    "Tap an arrow to help it escape!";
+
+  render();
+}
+
+function restartLevel() {
+  createLevel();
+}
+
+function nextLevel() {
+  level++;
+  createLevel();
+}
+
+/*
+  The hint highlights an arrow that can escape now.
+*/
+
+function showHint() {
+  const a = arrows.find(z => !z.removed && canEscape(z));
+
+  if (!a) {
+    document.getElementById("message").textContent =
+      "No available move! Restart this level.";
+    return;
+  }
+
+  hintIndex = a.id;
+  document.getElementById("message").textContent =
+    "💡 Try the highlighted arrow!";
+
+  render();
+}
+
+createLevel();
+</script>
+
 </body>
 </html>
