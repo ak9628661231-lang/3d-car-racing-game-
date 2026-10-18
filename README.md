@@ -1,124 +1,561 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Arrow Maze</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Highway Racing</title>
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#111;color:white;font-family:Arial;text-align:center}
-h1{font-size:28px;margin:22px 0 8px}
-p{color:#ddd;font-size:15px}
-#wrap{width:min(94vw,600px);margin:15px auto;background:white}
-svg{display:block;width:100%;height:auto;touch-action:manipulation}
-.wall{fill:none;stroke:#050505;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
-.arr{fill:#050505}
-#trail{fill:none;stroke:#ed1c2e;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
-#dot{fill:#ed1c2e;stroke:white;stroke-width:1.5}
-button{padding:13px 22px;margin:6px;border:0;border-radius:10px;background:#ed1c2e;color:white;font-weight:bold;font-size:16px}
-#msg{min-height:24px;font-weight:bold}
-#controls{display:grid;grid-template-columns:repeat(3,60px);gap:7px;justify-content:center;margin:12px}
-#controls button{margin:0;padding:12px 0;font-size:23px}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: #17251b;
+  font-family: Arial, sans-serif;
+  color: white;
+  text-align: center;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+h2 {
+  padding: 8px;
+  font-size: 22px;
+  background: #111;
+}
+
+#hud {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: #202020;
+  padding: 9px 4px;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+#game {
+  position: relative;
+  width: min(100vw, 420px);
+  height: min(67vh, 590px);
+  min-height: 350px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #378b35;
+  border-left: 5px solid #d9d9d9;
+  border-right: 5px solid #d9d9d9;
+}
+
+#road {
+  position: absolute;
+  inset: 0;
+  background: #424242;
+  overflow: hidden;
+}
+
+#road::before,
+#road::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: #f8f8f8;
+}
+
+#road::before { left: 5px; }
+#road::after { right: 5px; }
+
+.lane {
+  position: absolute;
+  top: -100%;
+  height: 200%;
+  width: 5px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #fff 0px,
+    #fff 42px,
+    transparent 42px,
+    transparent 82px
+  );
+  animation: roadMove .65s linear infinite;
+}
+
+.lane.one { left: 33.33%; }
+.lane.two { left: 66.66%; }
+
+@keyframes roadMove {
+  from { transform: translateY(0); }
+  to { transform: translateY(82px); }
+}
+
+.scenery {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tree {
+  position: absolute;
+  font-size: 28px;
+  animation: treeMove linear infinite;
+}
+
+@keyframes treeMove {
+  from { transform: translateY(-80px); }
+  to { transform: translateY(650px); }
+}
+
+.car {
+  position: absolute;
+  width: 48px;
+  height: 82px;
+  border-radius: 12px 12px 8px 8px;
+  border: 2px solid rgba(255,255,255,.8);
+  box-shadow: 0 4px 5px #171717;
+  z-index: 5;
+}
+
+.car::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: 7px;
+  width: 30px;
+  height: 21px;
+  border-radius: 5px;
+  background: #a9e6f4;
+  border: 2px solid #222;
+}
+
+.car::after {
+  content: "";
+  position: absolute;
+  bottom: 9px;
+  left: 8px;
+  width: 28px;
+  height: 12px;
+  border-radius: 3px;
+  background: #252525;
+  border-top: 3px solid #ddd;
+}
+
+.player {
+  background: #e52424;
+  bottom: 22px;
+  left: calc(50% - 24px);
+}
+
+.enemy {
+  background: #1685ee;
+}
+
+.enemy.yellow { background: #f1bd17; }
+.enemy.purple { background: #8e44ad; }
+.enemy.white { background: #eeeeee; }
+
+.wheel {
+  position: absolute;
+  top: 20px;
+  width: 5px;
+  height: 19px;
+  background: #111;
+  border-radius: 2px;
+}
+
+.wheel.left { left: -5px; }
+.wheel.right { right: -5px; }
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  background: rgba(0,0,0,.78);
+  padding: 20px;
+}
+
+#overlay h1 {
+  font-size: 34px;
+  color: #ffe34c;
+}
+
+#overlay p {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 13px 23px;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#startBtn {
+  background: #19c963;
+  color: #071b0e;
+}
+
+#controls {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 12px;
+  background: #17251b;
+}
+
+.control {
+  width: 100px;
+  height: 54px;
+  font-size: 28px;
+  color: white;
+  background: #303b45;
+  border: 2px solid #a5b5c1;
+  touch-action: none;
+}
+
+#hint {
+  font-size: 12px;
+  color: #d5e7d4;
+  padding-bottom: 5px;
+}
 </style>
 </head>
+
 <body>
-<h1>ARROW MAZE</h1>
-<p>Raasta chuno aur laal player ko exit tak le jao.</p>
-<div id="wrap">
-<svg id="board" viewBox="0 0 400 400">
-<rect width="400" height="400" fill="#fff"/>
-<g class="wall">
-<path d="M25 25H125V85H75V115H125V145H165V25H205V115"/>
-<path d="M25 25V135 M55 50V145H105V175H165"/>
-<path d="M225 25H375V155H315V190H375"/>
-<path d="M225 75H265V95H285V50H345V85"/>
-<path d="M225 105H245V145H220V190H190V165H175"/>
-<path d="M25 165H75 M25 165V230H105"/>
-<path d="M55 190H150V230H190V255H235"/>
-<path d="M375 190V250H335V290H375V375H205V325H175V300H145V345H115V300H85V375H25V260H65V285H45V305"/>
-<path d="M25 260H90V285H65"/>
-<path d="M105 375V315H85 M125 260V300H150"/>
-<path d="M175 300V270H205V300H225V325"/>
-<path d="M235 255H270V280H300V310H335"/>
-<path d="M250 190H285V230H310"/>
-<path d="M265 230V270H285V325H310"/>
-<path d="M235 325H250V350H280"/>
-<path d="M310 350H350V330"/>
-</g>
-<g class="arr">
-<path d="M90 37L108 47L90 57Z"/>
-<path d="M175 37L185 55L165 55Z"/>
-<path d="M35 95L45 113L25 113Z"/>
-<path d="M355 120L337 110L337 130Z"/>
-<path d="M235 155L245 173L225 173Z"/>
-<path d="M65 210L85 220L65 230Z"/>
-<path d="M155 210L173 200L173 220Z"/>
-<path d="M200 275L190 257L210 257Z"/>
-<path d="M45 325L55 343L35 343Z"/>
-<path d="M95 325L105 343L85 343Z"/>
-<path d="M155 355L175 365L155 375Z"/>
-<path d="M285 355L295 337L305 355Z"/>
-<path d="M350 350L340 332L360 332Z"/>
-</g>
-<path id="trail" d="M200 135V180H155"/>
-<circle id="dot" cx="200" cy="135" r="5"/>
-</svg>
+
+<h2>🏎️ HIGHWAY RACING</h2>
+
+<div id="hud">
+  <span>🏆 Score: <b id="score">0</b></span>
+  <span>🚗 Speed: <b id="speed">1</b></span>
+  <span>⭐ Best: <b id="best">0</b></span>
 </div>
-<div id="msg">START dabao.</div>
-<div>
-<button id="start">▶ START</button>
-<button id="restart">↻ RESTART</button>
+
+<div id="game">
+  <div id="road">
+    <div class="lane one"></div>
+    <div class="lane two"></div>
+  </div>
+
+  <div class="scenery" id="scenery"></div>
+
+  <div class="car player" id="player">
+    <span class="wheel left"></span>
+    <span class="wheel right"></span>
+  </div>
+
+  <div id="overlay">
+    <h1 id="message">HIGHWAY RACING</h1>
+    <p id="instructions">
+      Dodge enemy cars and drive as far as you can!<br>
+      Use the left and right buttons to steer.
+    </p>
+    <button id="startBtn">▶ START GAME</button>
+  </div>
 </div>
-<p>Player ko chalane ke liye arrows dabao.</p>
+
 <div id="controls">
-<span></span><button data-d="up">↑</button><span></span>
-<button data-d="left">←</button><button data-d="down">↓</button><button data-d="right">→</button>
+  <button class="control" id="leftBtn">⬅️</button>
+  <button class="control" id="rightBtn">➡️</button>
 </div>
+
+<div id="hint">Move left or right to avoid other cars</div>
+
 <script>
-const dot=document.getElementById('dot');
-const trail=document.getElementById('trail');
-const msg=document.getElementById('msg');
-let x=200,y=135,started=false;
-const startPoint={x:200,y:135};
-function draw(){
- dot.setAttribute('cx',x);dot.setAttribute('cy',y);
- trail.setAttribute('d','M'+startPoint.x+' '+startPoint.y+' L'+x+' '+y);
-}
-function reset(){
- x=200;y=135;started=false;draw();
- msg.textContent='START dabao.';
-}
-document.getElementById('start').onclick=()=>{
- started=true;msg.textContent='Ab arrows se player chalao!';
-};
-document.getElementById('restart').onclick=reset;
-function move(d){
- if(!started){msg.textContent='Pehle START dabao!';return}
- let nx=x,ny=y,step=10;
- if(d==='up')ny-=step;
- if(d==='down')ny+=step;
- if(d==='left')nx-=step;
- if(d==='right')nx+=step;
- nx=Math.max(15,Math.min(385,nx));
- ny=Math.max(15,Math.min(385,ny));
- x=nx;y=ny;draw();
- if(x>=365&&y>=350){
- msg.textContent='Maze complete! 🎉';started=false;
- }else msg.textContent='Player position: '+x+', '+y;
-}
-document.querySelectorAll('[data-d]').forEach(b=>{
- b.addEventListener('click',()=>move(b.dataset.d));
-});
-document.getElementById('board').addEventListener('click',e=>{
- if(!started)return;
- const r=e.currentTarget.getBoundingClientRect();
- const px=(e.clientX-r.left)*400/r.width;
- const py=(e.clientY-r.top)*400/r.height;
- const dx=px-x,dy=py-y;
- if(Math.abs(dx)>Math.abs(dy))move(dx>0?'right':'left');
- else move(dy>0?'down':'up');
-});
-draw();
+(() => {
+  const game = document.getElementById("game");
+  const road = document.getElementById("road");
+  const player = document.getElementById("player");
+  const overlay = document.getElementById("overlay");
+  const startBtn = document.getElementById("startBtn");
+  const message = document.getElementById("message");
+  const instructions = document.getElementById("instructions");
+  const scoreEl = document.getElementById("score");
+  const speedEl = document.getElementById("speed");
+  const bestEl = document.getElementById("best");
+  const scenery = document.getElementById("scenery");
+
+  let running = false;
+  let playerX = 0;
+  let score = 0;
+  let speed = 220;
+  let enemies = [];
+  let lastTime = 0;
+  let spawnTimer = 0;
+  let animationId = 0;
+  let roadOffset = 0;
+  let keys = {};
+  let touchDirection = 0;
+  let touchTimer = 0;
+  let best = 0;
+
+  try {
+    best = Number(localStorage.getItem("highwayBest")) || 0;
+  } catch (e) {}
+  bestEl.textContent = best;
+
+  const lanePositions = [1/6, 1/2, 5/6];
+
+  function laneX(index) {
+    return game.clientWidth * lanePositions[index] - 24;
+  }
+
+  function makeTree() {
+    const tree = document.createElement("div");
+    tree.className = "tree";
+    tree.textContent = Math.random() > .5 ? "🌳" : "🌲";
+    tree.style.left = Math.random() > .5
+      ? (Math.random() * 13) + "%"
+      : (84 + Math.random() * 10) + "%";
+    tree.style.top = (-30 - Math.random() * 500) + "px";
+    tree.style.animationDuration = (4 + Math.random() * 4) + "s";
+    scenery.appendChild(tree);
+  }
+
+  for (let i = 0; i < 12; i++) makeTree();
+
+  function clearEnemies() {
+    enemies.forEach(e => e.el.remove());
+    enemies = [];
+  }
+
+  function resetGame() {
+    cancelAnimationFrame(animationId);
+    clearEnemies();
+
+    score = 0;
+    speed = 220;
+    spawnTimer = 0;
+    roadOffset = 0;
+    lastTime = 0;
+
+    playerX = laneX(1);
+    player.style.left = playerX + "px";
+
+    scoreEl.textContent = "0";
+    speedEl.textContent = "1";
+
+    document.querySelectorAll(".tree").forEach(t => t.remove());
+    for (let i = 0; i < 12; i++) makeTree();
+
+    overlay.style.display = "none";
+    running = true;
+    animationId = requestAnimationFrame(loop);
+  }
+
+  function spawnEnemy() {
+    const available = [0, 1, 2];
+    const lastLane = enemies.length
+      ? enemies[enemies.length - 1].lane
+      : -1;
+
+    let options = available.filter(l => l !== lastLane);
+    const lane = options[Math.floor(Math.random() * options.length)];
+
+    const el = document.createElement("div");
+    const types = ["", "yellow", "purple", "white"];
+    el.className = "car enemy " +
+      types[Math.floor(Math.random() * types.length)];
+
+    el.innerHTML =
+      '<span class="wheel left"></span>' +
+      '<span class="wheel right"></span>';
+
+    el.style.left = laneX(lane) + "px";
+    el.style.top = "-100px";
+    road.appendChild(el);
+
+    enemies.push({
+      el,
+      lane,
+      y: -100,
+      passed: false,
+      extraSpeed: Math.random() * 45
+    });
+  }
+
+  function movePlayer(direction, dt) {
+    if (!direction) return;
+
+    playerX += direction * 330 * dt;
+
+    const minX = 9;
+    const maxX = game.clientWidth - player.offsetWidth - 9;
+
+    playerX = Math.max(minX, Math.min(maxX, playerX));
+    player.style.left = playerX + "px";
+  }
+
+  function collision(a, b) {
+    const pad = 10;
+    return (
+      a.left + pad < b.right - pad &&
+      a.right - pad > b.left + pad &&
+      a.top + pad < b.bottom - pad &&
+      a.bottom - pad > b.top + pad
+    );
+  }
+
+  function gameOver() {
+    if (!running) return;
+    running = false;
+
+    cancelAnimationFrame(animationId);
+
+    if (score > best) {
+      best = score;
+      bestEl.textContent = best;
+      try {
+        localStorage.setItem("highwayBest", best);
+      } catch (e) {}
+    }
+
+    message.textContent = "GAME OVER!";
+    instructions.innerHTML =
+      "Your score: <b>" + score +
+      "</b><br>Try again and beat your best score!";
+    startBtn.textContent = "↻ RESTART GAME";
+    overlay.style.display = "flex";
+  }
+
+  function loop(timestamp) {
+    if (!running) return;
+
+    if (!lastTime) lastTime = timestamp;
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.04);
+    lastTime = timestamp;
+
+    const direction =
+      (keys.ArrowRight || keys.d ? 1 : 0) -
+      (keys.ArrowLeft || keys.a ? 1 : 0) ||
+      touchDirection;
+
+    movePlayer(direction, dt);
+
+    speed = Math.min(390, 220 + score * 1.2);
+    roadOffset += speed * dt;
+
+    document.querySelectorAll(".lane").forEach(lane => {
+      lane.style.backgroundPositionY = roadOffset + "px";
+    });
+
+    document.querySelectorAll(".tree").forEach(tree => {
+      let y = parseFloat(tree.dataset.y || "-30");
+      y += speed * dt;
+
+      if (y > game.clientHeight + 30) {
+        y = -50;
+        tree.style.left = Math.random() > .5
+          ? (Math.random() * 13) + "%"
+          : (84 + Math.random() * 10) + "%";
+      }
+
+      tree.dataset.y = y;
+      tree.style.animation = "none";
+      tree.style.top = y + "px";
+    });
+
+    spawnTimer += dt * 1000;
+
+    if (spawnTimer > Math.max(650, 1150 - score * 2)) {
+      spawnEnemy();
+      spawnTimer = 0;
+    }
+
+    const playerRect = player.getBoundingClientRect();
+
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      e.y += (speed * .72 + e.extraSpeed) * dt;
+      e.el.style.top = e.y + "px";
+
+      const enemyRect = e.el.getBoundingClientRect();
+
+      if (collision(playerRect, enemyRect)) {
+        gameOver();
+        return;
+      }
+
+      if (!e.passed && e.y > game.clientHeight) {
+        e.passed = true;
+        score += 10;
+        scoreEl.textContent = score;
+        speedEl.textContent = Math.round(speed / 100);
+      }
+
+      if (e.y > game.clientHeight + 100) {
+        e.el.remove();
+        enemies.splice(i, 1);
+      }
+    }
+
+    animationId = requestAnimationFrame(loop);
+  }
+
+  startBtn.addEventListener("click", resetGame);
+
+  document.addEventListener("keydown", e => {
+    if (["ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+      e.preventDefault();
+    }
+    keys[e.key] = true;
+    if (!running && e.key === " ") resetGame();
+  });
+
+  document.addEventListener("keyup", e => {
+    keys[e.key] = false;
+  });
+
+  function holdButton(button, direction) {
+    button.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      touchDirection = direction;
+    });
+
+    button.addEventListener("pointerup", () => {
+      if (touchDirection === direction) touchDirection = 0;
+    });
+
+    button.addEventListener("pointercancel", () => {
+      touchDirection = 0;
+    });
+
+    button.addEventListener("pointerleave", () => {
+      touchDirection = 0;
+    });
+  }
+
+  holdButton(document.getElementById("leftBtn"), -1);
+  holdButton(document.getElementById("rightBtn"), 1);
+
+  window.addEventListener("blur", () => {
+    keys = {};
+    touchDirection = 0;
+  });
+
+  window.addEventListener("resize", () => {
+    if (!running) {
+      playerX = laneX(1);
+      player.style.left = playerX + "px";
+    }
+  });
+})();
 </script>
+
 </body>
 </html>
