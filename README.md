@@ -1,512 +1,296 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D Arrow Escape Puzzle</title>
-
+<title>Arrow Escape Puzzle</title>
 <style>
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
+*{box-sizing:border-box}
+body{
+  margin:0;background:#10131b;color:white;
+  font-family:Arial,sans-serif;text-align:center;
+  user-select:none
 }
-
-body {
-  margin: 0;
-  background: #10182b;
-  color: white;
-  font-family: Arial, sans-serif;
-  text-align: center;
+header{padding:18px 10px}
+h1{margin:0 0 8px;color:#70e1ff;font-size:27px}
+p{color:#c5cad5;margin:8px}
+.panel{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:12px}
+.badge{background:#222838;padding:10px 16px;border-radius:12px}
+#game{
+  position:relative;width:min(94vw,440px);
+  aspect-ratio:1/1;margin:14px auto;
+  background:#fff;border-radius:14px;overflow:hidden;
+  box-shadow:0 0 25px #0008
 }
-
-header {
-  padding: 15px 8px;
-  background: linear-gradient(135deg,#172554,#312e81);
-  box-shadow: 0 4px 15px #0008;
+canvas{width:100%;height:100%;display:block;touch-action:manipulation}
+button{
+  border:0;border-radius:12px;padding:13px 22px;
+  margin:5px;font-size:16px;font-weight:bold;
+  background:#35c9ef;color:#10131b;cursor:pointer
 }
-
-h1 {
-  margin: 0 0 8px;
-  font-size: 25px;
-  color: #67e8f9;
-}
-
-.stats {
-  display: flex;
-  justify-content: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  font-size: 14px;
-}
-
-#game {
-  width: min(94vw, 480px);
-  margin: 22px auto 12px;
-  padding: 12px;
-  background: linear-gradient(145deg,#26344e,#131d32);
-  border: 2px solid #536581;
-  border-radius: 18px;
-  box-shadow: 0 12px 30px #0008;
-}
-
-#board {
-  width: 100%;
-  aspect-ratio: 1;
-  display: grid;
-  gap: 3px;
-  padding: 8px;
-  background: #0b1220;
-  border-radius: 12px;
-  perspective: 700px;
-}
-
-.cell {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  background: linear-gradient(145deg,#273951,#17253b);
-  border-radius: 5px;
-  box-shadow: inset 0 2px 3px #52657a55,
-              0 2px 0 #080e1b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.arrow {
-  width: 90%;
-  height: 90%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(19px, 6vw, 35px);
-  font-weight: 900;
-  cursor: pointer;
-  user-select: none;
-  border-radius: 5px;
-  color: var(--c);
-  text-shadow: 0 3px 0 #0008, 0 0 8px var(--c);
-  filter: drop-shadow(0 3px 1px #0009);
-  transition: transform .18s, opacity .18s;
-}
-
-.arrow:active {
-  transform: scale(.82);
-}
-
-.arrow.removing {
-  opacity: 0;
-  transform: translate(var(--tx),var(--ty)) scale(.2);
-}
-
-.controls {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 10px;
-}
-
-button {
-  border: none;
-  border-radius: 10px;
-  padding: 12px 16px;
-  color: white;
-  font-size: 14px;
-  font-weight: bold;
-  background: linear-gradient(135deg,#2563eb,#7c3aed);
-  box-shadow: 0 4px 0 #172554;
-  cursor: pointer;
-}
-
-button:active {
-  transform: translateY(2px);
-  box-shadow: none;
-}
-
-#message {
-  min-height: 30px;
-  padding: 8px;
-  color: #fde68a;
-  font-weight: bold;
-}
-
-#help {
-  color: #cbd5e1;
-  font-size: 13px;
-  padding: 0 15px 20px;
-  line-height: 1.6;
-}
-
-#win {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 5;
-  background: #050b18ed;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.winbox {
-  width: 100%;
-  max-width: 350px;
-  background: linear-gradient(145deg,#1e3a5f,#312e81);
-  padding: 28px;
-  border-radius: 22px;
-  border: 2px solid #67e8f9;
-  box-shadow: 0 0 35px #22d3ee55;
-}
-
-.winbox h2 {
-  color: #67e8f9;
-  font-size: 30px;
-}
-
-footer {
-  padding: 15px;
-  color: #94a3b8;
-  font-size: 12px;
-}
+button.secondary{background:#30384a;color:white}
+#message{min-height:30px;color:#ffe17b;font-weight:bold}
+footer{color:#9ba4b8;padding:10px 20px 25px}
 </style>
 </head>
-
 <body>
 
 <header>
-  <h1>🏹 ARROW ESCAPE 3D</h1>
-  <div class="stats">
-    <span>LEVEL: <b id="level">1</b></span>
-    <span>SCORE: <b id="score">0</b></span>
-    <span>MOVES: <b id="moves">0</b></span>
-  </div>
+  <h1>➤ Arrow Escape</h1>
+  <p>तीरों को सही क्रम में बाहर निकालो!</p>
 </header>
 
+<div class="panel">
+  <div class="badge">बचे हुए तीर: <b id="left">12</b></div>
+  <div class="badge">स्कोर: <b id="score">0</b></div>
+  <div class="badge">लेवल: <b id="level">1</b></div>
+</div>
+
 <div id="game">
-  <div id="board"></div>
-
-  <div id="message">Tap an arrow to help it escape!</div>
-
-  <div class="controls">
-    <button onclick="restartLevel()">↻ Restart</button>
-    <button onclick="showHint()">💡 Hint</button>
-    <button onclick="nextLevel()">Next Level ➜</button>
-  </div>
+  <canvas id="board" width="600" height="600"></canvas>
 </div>
 
-<div id="help">
-  HOW TO PLAY<br>
-  Tap an arrow to move it in its pointing direction.<br>
-  If another arrow blocks its path, it cannot escape.<br>
-  Clear the board to win the level!
+<div id="message">पहले उस तीर पर टैप करो जिसका रास्ता खाली है।</div>
+
+<div>
+  <button onclick="newGame()">🔄 Restart</button>
+  <button class="secondary" onclick="nextLevel()">अगला लेवल ➜</button>
 </div>
 
-<footer>ARROW ESCAPE PUZZLE • THINK • PLAN • ESCAPE</footer>
-
-<div id="win">
-  <div class="winbox">
-    <div style="font-size:55px">🏆</div>
-    <h2>LEVEL COMPLETE!</h2>
-    <p id="winText">Great job!</p>
-    <button onclick="nextLevel()">PLAY NEXT LEVEL ➜</button>
-  </div>
-</div>
+<footer>
+  टिप: तीर जिस दिशा में इशारा करता है, उसी तरफ बाहर निकलने का रास्ता खाली होना चाहिए।
+</footer>
 
 <script>
-const board = document.getElementById("board");
+const canvas=document.getElementById("board");
+const ctx=canvas.getContext("2d");
 
-let level = 1;
-let score = 0;
-let moves = 0;
-let arrows = [];
-let history = [];
-let locked = false;
-let hintIndex = -1;
+const N=6;
+const cell=100;
+let arrows=[];
+let score=0;
+let level=1;
+let selected=-1;
+let animating=null;
+let won=false;
 
-const colors = [
-  "#22d3ee", "#fb7185", "#fbbf24",
-  "#a78bfa", "#4ade80", "#f97316",
-  "#f472b6", "#60a5fa"
+// हर तीर एक खाने में रखा है।
+// दिशा: R=दायाँ, L=बायाँ, U=ऊपर, D=नीचे
+const layouts=[
+[
+ [0,0,'R'],[1,0,'D'],[2,0,'D'],[3,0,'D'],
+ [4,0,'D'],[5,0,'D'],[0,1,'D'],[2,1,'R'],
+ [4,1,'L'],[1,2,'R'],[3,2,'D'],[5,2,'L'],
+ [0,3,'R'],[2,3,'U'],[4,3,'R'],[1,4,'U'],
+ [3,4,'L'],[5,4,'U'],[0,5,'U'],[2,5,'R'],
+ [4,5,'R'],[5,5,'U']
+],
+[
+ [0,0,'D'],[1,0,'R'],[3,0,'D'],[5,0,'D'],
+ [0,1,'R'],[2,1,'D'],[4,1,'L'],[1,2,'U'],
+ [3,2,'R'],[5,2,'L'],[0,3,'D'],[2,3,'R'],
+ [4,3,'D'],[1,4,'R'],[3,4,'U'],[5,4,'U'],
+ [0,5,'R'],[2,5,'U'],[4,5,'R']
+]
 ];
 
-function randomColor(i) {
-  return colors[i % colors.length];
+function makeArrows(){
+  const layout=layouts[(level-1)%layouts.length];
+  arrows=layout.map((a,i)=>({
+    x:a[0],y:a[1],dir:a[2],id:i,alive:true,
+    progress:0
+  }));
+  selected=-1;
+  animating=null;
+  won=false;
+  updateUI();
+  draw();
+  message("पहले खाली रास्ते वाला तीर चुनो।");
 }
 
-/*
-  Each arrow has a starting cell and direction.
-  Directions:
-  R = right, L = left, U = up, D = down.
-*/
-
-function generatePuzzle(n) {
-  const list = [];
-  const occupied = new Set();
-
-  function add(x, y, d) {
-    const key = x + "," + y;
-    if (x < 0 || y < 0 || x >= n || y >= n) return false;
-    if (occupied.has(key)) return false;
-
-    occupied.add(key);
-    list.push({
-      x, y, d,
-      id: list.length,
-      color: randomColor(list.length),
-      removed: false
-    });
-    return true;
-  }
-
-  /*
-    Make arrows whose paths lead toward the board edge.
-    Some arrows start blocked by other arrows.
-  */
-
-  const directions = ["R", "D", "L", "U"];
-  const count = Math.min(n * n - 3, 8 + level * 3);
-
-  let attempts = 0;
-
-  while (list.length < count && attempts < 2000) {
-    attempts++;
-
-    const x = Math.floor(Math.random() * n);
-    const y = Math.floor(Math.random() * n);
-    const d = directions[Math.floor(Math.random() * 4)];
-
-    add(x, y, d);
-  }
-
-  /*
-    Arrange arrows in a deterministic, solvable order:
-    arrows pointing outward are always permitted to escape.
-    Remaining arrows may be blocked temporarily.
-  */
-
-  return list;
+function updateUI(){
+  document.getElementById("left").textContent=
+    arrows.filter(a=>a.alive).length;
+  document.getElementById("score").textContent=score;
+  document.getElementById("level").textContent=level;
 }
 
-function directionSymbol(d) {
+function message(t){
+  document.getElementById("message").textContent=t;
+}
+
+function directionVector(d){
   return {
-    R: "➜",
-    L: "⬅",
-    U: "⬆",
-    D: "⬇"
+    R:[1,0],L:[-1,0],U:[0,-1],D:[0,1]
   }[d];
 }
 
-function getGridSize() {
-  return Math.min(7, 4 + Math.floor((level - 1) / 2));
-}
+function canExit(a){
+  const [dx,dy]=directionVector(a.dir);
+  let x=a.x+dx,y=a.y+dy;
 
-function getRay(a) {
-  const cells = [];
-  let x = a.x;
-  let y = a.y;
-
-  const delta = {
-    R: [1, 0],
-    L: [-1, 0],
-    U: [0, -1],
-    D: [0, 1]
-  }[a.d];
-
-  while (true) {
-    x += delta[0];
-    y += delta[1];
-
-    if (x < 0 || y < 0 || x >= getGridSize() || y >= getGridSize()) {
-      break;
-    }
-
-    cells.push([x, y]);
-  }
-
-  return cells;
-}
-
-function canEscape(a) {
-  const ray = getRay(a);
-
-  for (const [x, y] of ray) {
-    const blocker = arrows.find(
-      b => !b.removed && b.id !== a.id &&
-           b.x === x && b.y === y
+  while(x>=0&&x<N&&y>=0&&y<N){
+    const blocker=arrows.find(b=>
+      b.alive&&b.id!==a.id&&b.x===x&&b.y===y
     );
-
-    if (blocker) return false;
+    if(blocker)return false;
+    x+=dx;
+    y+=dy;
   }
-
   return true;
 }
 
-function render() {
-  const n = getGridSize();
+function drawArrow(a){
+  const cx=a.x*cell+cell/2;
+  const cy=a.y*cell+cell/2;
+  const [dx,dy]=directionVector(a.dir);
+  const angle=Math.atan2(dy,dx);
 
-  board.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
-  board.innerHTML = "";
+  ctx.save();
+  ctx.translate(cx,cy);
 
-  for (let y = 0; y < n; y++) {
-    for (let x = 0; x < n; x++) {
-      const cell = document.createElement("div");
-      cell.className = "cell";
-
-      const a = arrows.find(
-        z => !z.removed && z.x === x && z.y === y
-      );
-
-      if (a) {
-        const el = document.createElement("div");
-        el.className = "arrow";
-        el.textContent = directionSymbol(a.d);
-        el.style.setProperty("--c", a.color);
-
-        el.setAttribute("role", "button");
-        el.setAttribute("aria-label", "Arrow " + a.d);
-
-        if (a.id === hintIndex) {
-          el.style.background = "#ffffff22";
-          el.style.outline = "2px solid white";
-        }
-
-        el.onclick = () => tapArrow(a.id);
-
-        cell.appendChild(el);
-      }
-
-      board.appendChild(cell);
-    }
+  if(animating&&animating.id===a.id){
+    ctx.translate(
+      dx*animating.progress*cell*0.95,
+      dy*animating.progress*cell*0.95
+    );
   }
 
-  document.getElementById("level").textContent = level;
-  document.getElementById("score").textContent = score;
-  document.getElementById("moves").textContent = moves;
+  ctx.rotate(angle);
+
+  ctx.lineCap="round";
+  ctx.lineJoin="round";
+  ctx.strokeStyle=a.id===selected?"#ef3340":"#111";
+  ctx.fillStyle=ctx.strokeStyle;
+  ctx.lineWidth=10;
+
+  ctx.beginPath();
+  ctx.moveTo(-30,0);
+  ctx.lineTo(22,0);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(15,-17);
+  ctx.lineTo(39,0);
+  ctx.lineTo(15,17);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
 }
 
-function tapArrow(id) {
-  if (locked) return;
+function draw(){
+  ctx.clearRect(0,0,600,600);
+  ctx.fillStyle="#fff";
+  ctx.fillRect(0,0,600,600);
 
-  const a = arrows.find(z => z.id === id);
+  // हल्का ग्रिड
+  ctx.strokeStyle="#eeeeee";
+  ctx.lineWidth=1;
+  for(let i=1;i<N;i++){
+    ctx.beginPath();
+    ctx.moveTo(i*cell,0);
+    ctx.lineTo(i*cell,600);
+    ctx.stroke();
 
-  if (!a || a.removed) return;
-
-  if (!canEscape(a)) {
-    document.getElementById("message").textContent =
-      "🚧 Path blocked! Remove the blocking arrow first.";
-    return;
+    ctx.beginPath();
+    ctx.moveTo(0,i*cell);
+    ctx.lineTo(600,i*cell);
+    ctx.stroke();
   }
 
-  history.push({
-    id: a.id,
-    x: a.x,
-    y: a.y,
-    removed: a.removed,
-    score,
-    moves
+  arrows.forEach(a=>{
+    if(a.alive)drawArrow(a);
   });
 
-  locked = true;
-  moves++;
-  score += 10;
-
-  const element = [...document.querySelectorAll(".arrow")]
-    .find(el => el.getAttribute("aria-label") === "Arrow " + a.d &&
-      el.parentElement.parentElement.querySelector(".arrow") === el);
-
-  const delta = {
-    R: [150, 0],
-    L: [-150, 0],
-    U: [0, -150],
-    D: [0, 150]
-  }[a.d];
-
-  const el = findArrowElement(a);
-
-  if (el) {
-    el.style.setProperty("--tx", delta[0] + "px");
-    el.style.setProperty("--ty", delta[1] + "px");
-    el.classList.add("removing");
+  if(won){
+    ctx.fillStyle="#000a";
+    ctx.fillRect(0,0,600,600);
+    ctx.fillStyle="#fff";
+    ctx.textAlign="center";
+    ctx.font="bold 42px Arial";
+    ctx.fillText("LEVEL COMPLETE!",300,270);
+    ctx.font="24px Arial";
+    ctx.fillText("🎉 शानदार!",300,325);
   }
-
-  document.getElementById("message").textContent = "✨ Arrow escaped!";
-
-  setTimeout(() => {
-    a.removed = true;
-    locked = false;
-    hintIndex = -1;
-    render();
-
-    if (arrows.every(z => z.removed)) {
-      finishLevel();
-    }
-  }, 190);
 }
 
-function findArrowElement(a) {
-  const cells = [...board.children];
-  const n = getGridSize();
-  const index = a.y * n + a.x;
-  return cells[index]?.querySelector(".arrow") || null;
-}
+function tap(e){
+  if(won||animating)return;
 
-function finishLevel() {
-  score += level * 100;
+  const rect=canvas.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*600/rect.width;
+  const y=(e.clientY-rect.top)*600/rect.height;
 
-  document.getElementById("score").textContent = score;
-  document.getElementById("winText").textContent =
-    "You escaped all arrows! Bonus: " + (level * 100) + " points.";
+  const gx=Math.floor(x/cell);
+  const gy=Math.floor(y/cell);
 
-  document.getElementById("win").style.display = "flex";
-}
+  let a=arrows.find(b=>
+    b.alive&&b.x===gx&&b.y===gy
+  );
 
-function createLevel() {
-  const n = getGridSize();
-  arrows = generatePuzzle(n);
-  history = [];
-  moves = 0;
-  locked = false;
-  hintIndex = -1;
-
-  document.getElementById("win").style.display = "none";
-  document.getElementById("message").textContent =
-    "Tap an arrow to help it escape!";
-
-  render();
-}
-
-function restartLevel() {
-  createLevel();
-}
-
-function nextLevel() {
-  level++;
-  createLevel();
-}
-
-/*
-  The hint highlights an arrow that can escape now.
-*/
-
-function showHint() {
-  const a = arrows.find(z => !z.removed && canEscape(z));
-
-  if (!a) {
-    document.getElementById("message").textContent =
-      "No available move! Restart this level.";
+  if(!a){
+    message("किसी तीर पर टैप करो।");
     return;
   }
 
-  hintIndex = a.id;
-  document.getElementById("message").textContent =
-    "💡 Try the highlighted arrow!";
+  selected=a.id;
 
-  render();
+  if(!canExit(a)){
+    message("❌ रास्ता बंद है! पहले दूसरे तीर हटाओ।");
+    draw();
+    return;
+  }
+
+  message("✅ सही रास्ता! तीर बाहर जा रहा है।");
+  animating={id:a.id,progress:0};
+  let start=null;
+
+  function frame(time){
+    if(!start)start=time;
+    animating.progress=Math.min((time-start)/350,1);
+    draw();
+
+    if(animating.progress<1){
+      requestAnimationFrame(frame);
+    }else{
+      a.alive=false;
+      animating=null;
+      selected=-1;
+      score+=10;
+      updateUI();
+
+      if(arrows.every(b=>!b.alive)){
+        won=true;
+        score+=50;
+        updateUI();
+        message("🎉 जीत गए! अगले लेवल पर जाने के लिए बटन दबाओ।");
+      }else{
+        message("अच्छा! अब अगला खाली रास्ता खोजो।");
+      }
+      draw();
+    }
+  }
+
+  requestAnimationFrame(frame);
 }
 
-createLevel();
-</script>
+canvas.addEventListener("pointerdown",tap);
 
+function newGame(){
+  score=0;
+  level=1;
+  makeArrows();
+}
+
+function nextLevel(){
+  level++;
+  makeArrows();
+  message("लेवल "+level+" शुरू! सारे तीर बाहर निकालो।");
+}
+
+makeArrows();
+</script>
 </body>
 </html>
