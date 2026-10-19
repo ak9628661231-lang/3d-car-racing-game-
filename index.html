@@ -1,0 +1,239 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Highways Rush</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#142b22;color:white;font-family:Arial,sans-serif;text-align:center}
+h2{margin:12px 0 5px;font-size:24px}
+#info{display:flex;justify-content:space-around;max-width:420px;margin:12px auto;font-weight:bold;font-size:17px}
+#game{position:relative;width:min(100%,420px);height:min(66vh,620px);min-height:390px;margin:auto;overflow:hidden;border:4px solid #d8e7d5;border-radius:12px;background:#57b9ed;touch-action:pan-y}
+#sky{position:absolute;inset:0 0 55%;background:linear-gradient(#51b9f3,#c9efff)}
+.mountain{position:absolute;bottom:0;width:0;height:0;border-left:66px solid transparent;border-right:66px solid transparent;border-bottom:102px solid #718b9b}
+.mountain:after{content:"";position:absolute;left:-29px;top:18px;border-left:29px solid transparent;border-right:29px solid transparent;border-bottom:44px solid white}
+#field{position:absolute;inset:45% 0 0;background:linear-gradient(90deg,#368b3a,#61b843 50%,#31863b)}
+#pond{position:absolute;width:82px;height:43px;left:3%;top:51%;border-radius:50%;background:#49ccef;border:5px solid #bde995}
+#road{position:absolute;inset:0 auto 0 18%;width:64%;background:#41464b;border-left:5px solid #fff0cd;border-right:5px solid #fff0cd;overflow:hidden}
+.edge{position:absolute;top:0;bottom:0;width:3px;background:#fff}
+.edge.left{left:33.33%}
+.edge.right{left:66.66%}
+.markings{position:absolute;inset:-100% 0 0;background:repeating-linear-gradient(to bottom,transparent 0 33px,#fff 33px 68px,transparent 68px 102px);animation:roadmove .7s linear infinite}
+@keyframes roadmove{to{transform:translateY(102px)}}
+.tree{position:absolute;z-index:2;font-size:28px;line-height:1}
+.car{position:absolute;width:42px;height:72px;border:3px solid #292b2c;border-radius:12px 12px 9px 9px;box-shadow:inset 0 8px #ffffff44;z-index:5}
+.car:before{content:"";position:absolute;left:5px;right:5px;top:12px;height:19px;border-radius:5px;background:#bcecff;border:2px solid #292b2c}
+.car:after{content:"";position:absolute;left:5px;right:5px;bottom:6px;height:8px;border-radius:3px;background:#242a30}
+#player{background:#ed4141;bottom:16px;left:calc(50% - 21px)}
+.enemy{background:#ffb72e}
+#overlay{position:absolute;inset:0;z-index:10;background:#0009;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:18px}
+#overlay h1{font-size:29px;margin:10px 0}
+#overlay p{line-height:1.5}
+button{border:0;border-radius:12px;padding:13px 22px;background:#ffcd36;color:#18241b;font-size:18px;font-weight:bold;cursor:pointer;touch-action:manipulation}
+#controls{display:flex;justify-content:center;gap:35px;margin:12px auto 8px}
+.ctrl{width:105px;font-size:28px;padding:9px}
+small{display:block;margin-bottom:10px;color:#d8e9dc}
+</style>
+</head>
+<body>
+
+<h2>🏁 HIGHWAYS RUSH 🏁</h2>
+<div id="info">
+<span>🏆 Score: <b id="score">0</b></span>
+<span>🚘 Best: <b id="best">0</b></span>
+</div>
+
+<div id="game">
+  <div id="sky">
+    <div class="mountain" style="left:0%;border-bottom-width:95px"></div>
+    <div class="mountain" style="left:34%;border-bottom-width:135px;border-bottom-color:#91a7b3"></div>
+    <div class="mountain" style="left:71%;border-bottom-width:105px"></div>
+  </div>
+
+  <div id="field"></div>
+  <div id="pond"></div>
+
+  <div class="tree" style="left:3%;top:43%">🌳</div>
+  <div class="tree" style="right:3%;top:48%">🌲</div>
+  <div class="tree" style="left:5%;top:70%">🌳</div>
+  <div class="tree" style="right:4%;top:77%">🌴</div>
+  <div class="tree" style="left:2%;top:87%">🌲</div>
+
+  <div id="road">
+    <div class="markings"></div>
+    <div class="edge left"></div>
+    <div class="edge right"></div>
+  </div>
+
+  <div id="player" class="car"></div>
+
+  <div id="overlay">
+    <h1>🏎️ HIGHWAYS RUSH</h1>
+    <p>Dodge enemy cars and drive as far as you can!</p>
+    <button id="start">START GAME ▶</button>
+  </div>
+</div>
+
+<div id="controls">
+  <button class="ctrl" id="left">⬅️</button>
+  <button class="ctrl" id="right">➡️</button>
+</div>
+<small>Use arrows or swipe to move your car</small>
+
+<script>
+const game=document.getElementById("game");
+const road=document.getElementById("road");
+const player=document.getElementById("player");
+const overlay=document.getElementById("overlay");
+const scoreEl=document.getElementById("score");
+const bestEl=document.getElementById("best");
+
+let lane=1,score=0,best=0,running=false;
+let enemies=[],lastTime=0,spawnTimer=0,raf=0;
+let speed=185;
+
+try{
+  best=Number(localStorage.getItem("highwaysRushBest"))||0;
+}catch(e){}
+bestEl.textContent=best;
+
+function carX(l){
+  return road.offsetLeft+road.clientWidth*(l+0.5)/3-21;
+}
+function placePlayer(){
+  player.style.left=carX(lane)+"px";
+}
+function move(d){
+  if(!running)return;
+  lane=Math.max(0,Math.min(2,lane+d));
+  placePlayer();
+}
+
+document.getElementById("left").addEventListener("pointerdown",e=>{
+  e.preventDefault();move(-1);
+});
+document.getElementById("right").addEventListener("pointerdown",e=>{
+  e.preventDefault();move(1);
+});
+
+let touchX=0,touchY=0;
+game.addEventListener("touchstart",e=>{
+  touchX=e.changedTouches[0].clientX;
+  touchY=e.changedTouches[0].clientY;
+},{passive:true});
+
+game.addEventListener("touchend",e=>{
+  const dx=e.changedTouches[0].clientX-touchX;
+  const dy=e.changedTouches[0].clientY-touchY;
+  if(Math.abs(dx)>25&&Math.abs(dx)>Math.abs(dy)){
+    move(dx>0?1:-1);
+  }
+},{passive:true});
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft")move(-1);
+  if(e.key==="ArrowRight")move(1);
+});
+
+function spawnEnemy(){
+  const el=document.createElement("div");
+  el.className="car enemy";
+  let choices=[0,1,2];
+  if(enemies.length){
+    choices=choices.filter(l=>
+      !enemies.some(en=>en.lane===l&&en.y<100)
+    );
+  }
+  if(!choices.length)return;
+  const l=choices[Math.floor(Math.random()*choices.length)];
+  el.style.left=carX(l)+"px";
+  el.style.top="-85px";
+  game.appendChild(el);
+  enemies.push({el:el,lane:l,y:-85});
+}
+
+function hit(a,b){
+  const x=a.getBoundingClientRect();
+  const y=b.getBoundingClientRect();
+  return x.left+7<y.right-7 &&
+         x.right-7>y.left+7 &&
+         x.top+9<y.bottom-9 &&
+         x.bottom-9>y.top+9;
+}
+
+function gameOver(){
+  running=false;
+  cancelAnimationFrame(raf);
+
+  if(score>best){
+    best=score;
+    bestEl.textContent=best;
+    try{localStorage.setItem("highwaysRushBest",best)}catch(e){}
+  }
+
+  overlay.innerHTML=
+    "<h1>🚘 GAME OVER</h1>"+
+    "<p>Your score: "+score+"</p>"+
+    '<button id="restart">PLAY AGAIN ↻</button>';
+  overlay.style.display="flex";
+  document.getElementById("restart").onclick=startGame;
+}
+
+function frame(t){
+  if(!running)return;
+  const dt=Math.min((t-lastTime)/1000,0.04);
+  lastTime=t;
+  spawnTimer+=dt;
+
+  if(spawnTimer>1.05){
+    spawnTimer=0;
+    spawnEnemy();
+  }
+
+  speed=185+Math.min(score*0.45,90);
+
+  for(let i=enemies.length-1;i>=0;i--){
+    const en=enemies[i];
+    en.y+=speed*dt;
+    en.el.style.top=en.y+"px";
+
+    if(hit(player,en.el)){
+      gameOver();
+      return;
+    }
+
+    if(en.y>game.clientHeight){
+      en.el.remove();
+      enemies.splice(i,1);
+      score++;
+      scoreEl.textContent=score;
+    }
+  }
+
+  raf=requestAnimationFrame(frame);
+}
+
+function startGame(){
+  cancelAnimationFrame(raf);
+  enemies.forEach(en=>en.el.remove());
+  enemies=[];
+  lane=1;
+  score=0;
+  speed=185;
+  spawnTimer=0;
+  scoreEl.textContent="0";
+  placePlayer();
+  overlay.style.display="none";
+  running=true;
+  lastTime=performance.now();
+  raf=requestAnimationFrame(frame);
+}
+
+document.getElementById("start").onclick=startGame;
+window.addEventListener("resize",placePlayer);
+placePlayer();
+</script>
+</body>
+</html>
