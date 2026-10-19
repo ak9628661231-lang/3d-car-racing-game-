@@ -1,433 +1,190 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="mr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Highways Rush</title>
-<style>
-*{box-sizing:border-box}
-body{
- margin:0;background:#102d23;color:white;
- font-family:Arial,sans-serif;text-align:center;
- user-select:none;-webkit-user-select:none;
-}
-header{padding:18px 8px 12px}
-h1{font-size:clamp(23px,6vw,38px);margin:0 0 20px}
-.scoreboard{
- display:flex;justify-content:space-around;
- gap:8px;font-size:clamp(17px,4.5vw,25px);
- font-weight:bold;margin-bottom:15px;
-}
-#game{
- display:block;width:100%;height:min(69vh,850px);
- min-height:380px;border:6px solid #d5e8c5;
- border-radius:22px;background:#65c9ee;
- touch-action:pan-y;
-}
-.controls{
- display:flex;justify-content:center;gap:10%;
- padding:20px 12px 8px;
-}
-button{
- border:0;border-radius:23px;background:#ffcf32;
- color:#263238;font-size:42px;font-weight:bold;
- width:30%;max-width:205px;height:90px;
- box-shadow:0 5px 0 #d39b15;
- touch-action:manipulation;
-}
-button:active{transform:translateY(3px);box-shadow:0 2px 0 #d39b15}
-.hint{font-size:17px;color:#d4e3d9;padding:8px 12px 25px}
-#overlay{
- position:fixed;inset:0;background:#0009;
- display:flex;align-items:center;justify-content:center;
- padding:20px;z-index:5;
-}
-.panel{
- background:#102d23;border:3px solid #ffcf32;
- border-radius:24px;padding:25px 20px;
- width:min(90%,360px);box-shadow:0 10px 40px #0007;
-}
-.panel h2{font-size:32px;margin:5px 0 12px}
-.panel p{font-size:18px;line-height:1.5}
-.panel button{width:100%;max-width:none;height:65px;font-size:22px;margin-top:12px}
-.hidden{display:none!important}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>मंदिर रनर गेम</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            background: linear-gradient(to bottom, #87CEEB, #DEB887);
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+        .ui {
+            margin-top: 10px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
-<header>
- <h1>🏁 HIGHWAYS RUSH 🏁</h1>
- <div class="scoreboard">
-  <span>🏆 Score: <span id="score">0</span></span>
-  <span>🚘 Best: <span id="best">0</span></span>
- </div>
-</header>
-
-<canvas id="game"></canvas>
-
-<div class="controls">
- <button id="left" aria-label="Move left">⬅️</button>
- <button id="right" aria-label="Move right">➡️</button>
-</div>
-<div class="hint">Use arrows or swipe to move your car</div>
-
-<div id="overlay">
- <div class="panel">
-  <h2>🏁 HIGHWAYS RUSH</h2>
-  <p>Dodge the traffic and make your best score!</p>
-  <p>⬅️ ➡️ Move your car between lanes.</p>
-  <button id="start">▶ START GAME</button>
- </div>
-</div>
+    <div class="ui">स्कोअर: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
 
 <script>
-(() => {
-"use strict";
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const scoreEl = document.getElementById("score");
-const bestEl = document.getElementById("best");
-const overlay = document.getElementById("overlay");
-const startBtn = document.getElementById("start");
+    let score = 0;
+    let isGameOver = false;
 
-let W=360,H=600,dpr=1;
-let running=false,gameOver=false;
-let score=0,best=0,speed=230;
-let playerLane=1,playerX=0;
-let roadOffset=0,spawnTimer=0,lastTime=0;
-let traffic=[];
-let scenery=[];
-let animationId=0;
+    // खेळाडू (Player)
+    let player = {
+        x: 180,
+        y: 480,
+        width: 40,
+        height: 60,
+        speed: 5,
+        lane: 1 // 0: डावी, 1: मध्य, 2: उजवी
+    };
 
-try {
- best=Number(localStorage.getItem("highwaysRushBest"))||0;
-} catch(e) {}
-bestEl.textContent=best;
+    const lanes = [90, 180, 270]; // रस्त्याचे तीन मार्ग
 
-function resize(){
- const rect=canvas.getBoundingClientRect();
- W=Math.max(280,rect.width);
- H=Math.max(380,rect.height);
- dpr=Math.min(window.devicePixelRatio||1,2);
- canvas.width=Math.round(W*dpr);
- canvas.height=Math.round(H*dpr);
- ctx.setTransform(dpr,0,0,dpr,0,0);
- playerX=laneCenter(playerLane);
- draw();
-}
-window.addEventListener("resize",resize);
+    let coins = [];
+    let obstacles = [];
 
-function roadWidth(){return W*0.62}
-function roadLeft(){return (W-roadWidth())/2}
-function laneWidth(){return roadWidth()/3}
-function laneCenter(lane){return roadLeft()+laneWidth()*(lane+.5)}
+    // नाणी आणि अडथळे तयार करणे
+    function spawnItems() {
+        if (Math.random() < 0.03) {
+            let laneIndex = Math.floor(Math.random() * 3);
+            coins.push({ x: lanes[laneIndex], y: -50, radius: 15 });
+        }
+        if (Math.random() < 0.02) {
+            let laneIndex = Math.floor(Math.random() * 3);
+            obstacles.push({ x: lanes[laneIndex], y: -50, width: 40, height: 40 });
+        }
+    }
 
-function roundedRect(x,y,w,h,r,fill,stroke,line=3){
- ctx.beginPath();
- ctx.roundRect(x,y,w,h,r);
- ctx.fillStyle=fill;ctx.fill();
- if(stroke){ctx.lineWidth=line;ctx.strokeStyle=stroke;ctx.stroke();}
-}
+    // कीबोर्ड कंट்ரோल्स (किंवा मोबाईल टचसाठी)
+    window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft" && player.lane > 0) {
+            player.lane--;
+        }
+        if (e.key === "ArrowRight" && player.lane < 2) {
+            player.lane++;
+        }
+    });
 
-function drawBackground(){
- // Sky
- let sky=ctx.createLinearGradient(0,0,0,H*.5);
- sky.addColorStop(0,"#49b9f0");
- sky.addColorStop(1,"#d2f5ff");
- ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+    // मोबाईल टच कंट்ரோल्स
+    let touchStartX = 0;
+    window.addEventListener("touchstart", (e) => {
+        touchStartX = e.touches[0].clientX;
+    });
+    window.addEventListener("touchend", (e) => {
+        let touchEndX = e.changedTouches[0].clientX;
+        if (touchEndX < touchStartX - 30 && player.lane > 0) {
+            player.lane--; // डावीकडे स्वाइप
+        } else if (touchEndX > touchStartX + 30 && player.lane < 2) {
+            player.lane++; // उजवीकडे स्वाइप
+        }
+    });
 
- // Mountains
- ctx.fillStyle="#718b98";
- ctx.beginPath();
- ctx.moveTo(0,H*.48);ctx.lineTo(W*.2,H*.23);
- ctx.lineTo(W*.38,H*.46);ctx.lineTo(W*.63,H*.19);
- ctx.lineTo(W*.92,H*.48);ctx.lineTo(W,H*.42);
- ctx.lineTo(W,H*.6);ctx.lineTo(0,H*.6);ctx.fill();
+    function update() {
+        if (isGameOver) return;
 
- ctx.fillStyle="#f5f7ee";
- for(const m of [
-  [W*.2,H*.23,W*.12,H*.16],
-  [W*.63,H*.19,W*.15,H*.2]
- ]){
-  ctx.beginPath();
-  ctx.moveTo(m[0],m[1]+m[3]);
-  ctx.lineTo(m[0]+m[2]*.5,m[1]);
-  ctx.lineTo(m[0]+m[2],m[1]+m[3]);
-  ctx.closePath();ctx.fill();
- }
+        // खेळाडूची जागा ठरवणे
+        let targetX = lanes[player.lane];
+        player.x += (targetX - player.x) * 0.2;
 
- // Grass
- ctx.fillStyle="#389543";
- ctx.fillRect(0,H*.47,W,H*.53);
+        spawnItems();
 
- // Pond
- ctx.fillStyle="#b5e48a";
- ctx.beginPath();ctx.ellipse(W*.11,H*.58,W*.09,H*.035,-.1,0,Math.PI*2);ctx.fill();
- ctx.fillStyle="#42c9ed";
- ctx.beginPath();ctx.ellipse(W*.11,H*.58,W*.078,H*.025,-.1,0,Math.PI*2);ctx.fill();
+        // नाण्यांची हालचाल
+        for (let i = coins.length - 1; i >= 0; i--) {
+            coins[i].y += 4;
 
- // Moving roadside trees
- for(const s of scenery){
-  const y=s.y;
-  if(y < -30 || y > H+40) continue;
-  const x=s.side===0?W*.075:W*.925;
-  drawTree(x,y,s.type);
- }
-}
+            // टक्कर तपासणी (Coin Collection)
+            let dx = coins[i].x - (player.x + player.width / 2);
+            let dy = coins[i].y - (player.y + player.height / 2);
+            let distance = Math.sqrt(dx * dx + dy * dy);
 
-function drawTree(x,y,type){
- ctx.save();ctx.translate(x,y);
- if(type===0){
-  ctx.fillStyle="#76502e";ctx.fillRect(-3,2,6,18);
-  ctx.fillStyle="#78c82e";
-  ctx.beginPath();ctx.arc(0,-3,16,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="#a4db39";
-  ctx.beginPath();ctx.arc(-7,-7,8,0,Math.PI*2);ctx.fill();
- }else if(type===1){
-  ctx.fillStyle="#14874c";
-  for(let i=0;i<3;i++){
-   ctx.beginPath();
-   ctx.moveTo(0,-24+i*8);
-   ctx.lineTo(-13,5+i*6);
-   ctx.lineTo(13,5+i*6);
-   ctx.closePath();ctx.fill();
-  }
-  ctx.fillStyle="#75502e";ctx.fillRect(-2,16,4,7);
- }else{
-  ctx.fillStyle="#8b6039";ctx.fillRect(-3,0,6,20);
-  ctx.strokeStyle="#16884b";ctx.lineWidth=4;
-  ctx.beginPath();ctx.moveTo(0,5);ctx.lineTo(-13,-4);
-  ctx.moveTo(0,9);ctx.lineTo(13,0);
-  ctx.moveTo(0,0);ctx.lineTo(-8,-12);
-  ctx.moveTo(0,1);ctx.lineTo(8,-14);ctx.stroke();
- }
- ctx.restore();
-}
+            if (distance < 30) {
+                score += 10;
+                document.getElementById("score").innerText = score;
+                coins.splice(i, 1);
+            } else if (coins[i].y > canvas.height) {
+                coins.splice(i, 1);
+            }
+        }
 
-function drawRoad(){
- const left=roadLeft(),rw=roadWidth();
- ctx.fillStyle="#41464b";
- ctx.fillRect(left,0,rw,H);
+        // अडथळ्यांची हालचाल
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            obstacles[i].y += 4;
 
- // Road edges
- ctx.fillStyle="#fff";
- ctx.fillRect(left-3,0,4,H);
- ctx.fillRect(left+rw-1,0,4,H);
+            // टक्कर तपासणी (Collision with Obstacle)
+            if (
+                player.x < obstacles[i].x + obstacles[i].width &&
+                player.x + player.width > obstacles[i].x &&
+                player.y < obstacles[i].y + obstacles[i].height &&
+                player.y + player.height > obstacles[i].y
+            ) {
+                isGameOver = true;
+                alert("गेम संपला! तुमचा स्कोअर: " + score);
+                document.location.reload();
+            } else if (obstacles[i].y > canvas.height) {
+                obstacles.splice(i, 1);
+            }
+        }
+    }
 
- // Lane markings
- ctx.fillStyle="#f7f7f4";
- for(let lane=1;lane<3;lane++){
-  const x=left+lane*laneWidth()-2;
-  for(let y=-70+(roadOffset%100);y<H;y+=100){
-   ctx.fillRect(x,y,4,65);
-  }
- }
-}
+    function draw() {
+        // पार्श्वभूमी (Background) साफ करणे
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-function drawCar(x,y,color,scale=1,isPlayer=false){
- ctx.save();
- ctx.translate(x,y);
- ctx.scale(scale,scale);
+        // रस्ता काढणे (Temple path style)
+        ctx.fillStyle = "#8B4513";
+        ctx.fillRect(50, 0, 300, canvas.height);
 
- const cw=47,ch=91;
- // Wheels
- ctx.fillStyle="#202328";
- roundedRect(-cw/2-3,-ch*.30,8,22,3,"#202328");
- roundedRect(cw/2-5,-ch*.30,8,22,3,"#202328");
- roundedRect(-cw/2-3,ch*.20,8,22,3,"#202328");
- roundedRect(cw/2-5,ch*.20,8,22,3,"#202328");
+        ctx.strokeStyle = "#FFD700";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(140, 0); ctx.lineTo(140, canvas.height);
+        ctx.moveTo(260, 0); ctx.lineTo(260, canvas.height);
+        ctx.stroke();
 
- // Body
- roundedRect(-cw/2,-ch/2,cw,ch,15,color,"#282a2c",4);
+        // नाणी काढणे (Coins)
+        ctx.fillStyle = "gold";
+        for (let c of coins) {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
 
- // Windscreen
- roundedRect(-cw*.34,-ch*.30,cw*.68,ch*.30,8,
-  isPlayer?"#a9ecff":"#b5edff","#343c40",3);
+        // अडथळे काढणे
+        ctx.fillStyle = "red";
+        for (let o of obstacles) {
+            ctx.fillRect(o.x - 20, o.y, o.width, o.height);
+        }
 
- // Front lights
- ctx.fillStyle="#fff1a6";
- ctx.fillRect(-cw*.34,-ch*.40,8,4);
- ctx.fillRect(cw*.17,-ch*.40,8,4);
+        // खेळाडू काढणे (Player)
+        ctx.fillStyle = "#FF4500";
+        ctx.fillRect(player.x - 20, player.y, player.width, player.height);
+    }
 
- // Bumper
- roundedRect(-cw*.30,ch*.26,cw*.60,12,4,"#292d31",null);
+    function loop() {
+        update();
+        draw();
+        if (!isGameOver) {
+            requestAnimationFrame(loop);
+        }
+    }
 
- // Little highlights
- ctx.strokeStyle="#ffffff66";ctx.lineWidth=2;
- ctx.beginPath();ctx.moveTo(-cw*.29,-ch*.39);
- ctx.lineTo(-cw*.29,ch*.13);ctx.stroke();
- ctx.restore();
-}
-
-function draw(){
- if(!ctx)return;
- ctx.clearRect(0,0,W,H);
- drawBackground();
- drawRoad();
-
- for(const car of traffic){
-  drawCar(car.x,car.y,car.color,car.scale,false);
- }
-
- drawCar(playerX,H*.79,"#f33f48",1,true);
-
- // Small road details
-}
-
-function resetGame(){
- score=0;speed=230;playerLane=1;
- playerX=laneCenter(1);
- roadOffset=0;spawnTimer=0;traffic=[];
- scenery=[];
- for(let i=0;i<14;i++){
-  scenery.push({y:i*85-50,side:i%2,type:i%3});
- }
- scoreEl.textContent="0";
-}
-
-function spawnTraffic(){
- const lane=Math.floor(Math.random()*3);
- const colors=["#ffbd35","#29b8e8","#b06be5","#ff8847","#58d17d"];
- traffic.push({
-  lane,
-  x:laneCenter(lane),
-  y:-65,
-  color:colors[Math.floor(Math.random()*colors.length)],
-  scale:.85+Math.random()*.1,
-  passed:false
- });
-}
-
-function endGame(){
- if(!running)return;
- running=false;gameOver=true;
- if(score>best){
-  best=score;
-  bestEl.textContent=best;
-  try{localStorage.setItem("highwaysRushBest",String(best));}catch(e){}
- }
- overlay.classList.remove("hidden");
- overlay.querySelector("h2").textContent="💥 GAME OVER!";
- overlay.querySelector("p").textContent="Your score: "+score+" 🏆";
- overlay.querySelectorAll("p")[1].textContent="Best score: "+best;
- startBtn.textContent="🔄 PLAY AGAIN";
-}
-
-function update(dt){
- if(!running)return;
-
- speed=230+Math.min(score*2,240);
- roadOffset=(roadOffset+speed*dt)%100;
-
- // Smooth lane movement
- const target=laneCenter(playerLane);
- playerX+=(target-playerX)*Math.min(1,dt*14);
-
- // Move trees
- for(const s of scenery){
-  s.y+=speed*dt;
-  if(s.y>H+25){
-   s.y=-30-Math.random()*100;
-   s.side=Math.random()<.5?0:1;
-   s.type=Math.floor(Math.random()*3);
-  }
- }
-
- // Spawn traffic
- spawnTimer+=dt;
- const interval=Math.max(.58,1.22-score*.006);
- if(spawnTimer>=interval){
-  spawnTimer=0;
-  spawnTraffic();
- }
-
- // Move traffic
- const py=H*.79;
- for(let i=traffic.length-1;i>=0;i--){
-  const car=traffic[i];
-  car.y+=speed*dt;
-  car.x=laneCenter(car.lane);
-
-  // Collision
-  const dx=Math.abs(playerX-car.x);
-  const dy=Math.abs(py-car.y);
-  if(dx<laneWidth()*.53 && dy<72){
-   endGame();return;
-  }
-
-  // Score for passing traffic
-  if(!car.passed && car.y>py+65){
-   car.passed=true;
-   score++;
-   scoreEl.textContent=score;
-  }
-  if(car.y>H+100)traffic.splice(i,1);
- }
-}
-
-function frame(now){
- const dt=Math.min((now-lastTime)/1000||0,.04);
- lastTime=now;
- update(dt);
- draw();
- animationId=requestAnimationFrame(frame);
-}
-
-function startGame(){
- cancelAnimationFrame(animationId);
- resetGame();
- gameOver=false;running=true;
- overlay.classList.add("hidden");
- lastTime=performance.now();
- animationId=requestAnimationFrame(frame);
-}
-
-function move(dir){
- if(!running)return;
- playerLane=Math.max(0,Math.min(2,playerLane+dir));
-}
-
-document.getElementById("left").addEventListener("pointerdown",e=>{
- e.preventDefault();move(-1);
-});
-document.getElementById("right").addEventListener("pointerdown",e=>{
- e.preventDefault();move(1);
-});
-startBtn.addEventListener("click",startGame);
-
-let touchX=null,touchY=null;
-canvas.addEventListener("touchstart",e=>{
- const t=e.changedTouches[0];
- touchX=t.clientX;touchY=t.clientY;
-},{passive:true});
-
-canvas.addEventListener("touchend",e=>{
- if(touchX===null)return;
- const t=e.changedTouches[0];
- const dx=t.clientX-touchX;
- const dy=t.clientY-touchY;
- if(Math.abs(dx)>25 && Math.abs(dx)>Math.abs(dy)){
-  move(dx>0?1:-1);
- }
- touchX=null;touchY=null;
-},{passive:true});
-
-window.addEventListener("keydown",e=>{
- if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A"){
-  e.preventDefault();move(-1);
- }
- if(e.key==="ArrowRight"||e.key==="d"||e.key==="D"){
-  e.preventDefault();move(1);
- }
- if((e.key==="Enter"||e.key===" ")&&!running){
-  e.preventDefault();startGame();
- }
-});
-
-resize();
-})();
+    loop();
 </script>
+
 </body>
 </html>
